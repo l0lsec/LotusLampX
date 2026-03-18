@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LotusLamp X — BLE Light Controller</title>
+<meta name="description" content="Control LotusLamp X BLE LED lights from your terminal or browser. No phone required.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:      #0b0e14;
+  --surface: #131720;
+  --border:  #1e2533;
+  --text:    #c8cfd9;
+  --text-dim:#6b7a90;
+  --heading: #e8ecf1;
+  --accent:  #6ee7b7;
+  --accent2: #818cf8;
+  --accent3: #f472b6;
+  --red:     #fb7185;
+  --code-bg: #0f1219;
+  --nav-h:   56px;
+  --max-w:   1120px;
+  --radius:  10px;
+}
+html{scroll-behavior:smooth;scroll-padding-top:calc(var(--nav-h) + 24px)}
+body{
+  font-family:'Outfit',system-ui,sans-serif;
+  background:var(--bg);color:var(--text);
+  line-height:1.65;font-size:16px;
+  -webkit-font-smoothing:antialiased;
+}
+a{color:var(--accent);text-decoration:none;transition:color .15s}
+a:hover{color:#a7f3d0}
+
+/* ── NAV ────────────────────────────────────────────────── */
+nav{
+  position:sticky;top:0;z-index:100;
+  height:var(--nav-h);
+  background:rgba(11,14,20,.85);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;
+}
+.nav-inner{
+  max-width:var(--max-w);width:100%;margin:0 auto;
+  padding:0 24px;display:flex;align-items:center;justify-content:space-between;
+}
+.nav-brand{font-weight:700;font-size:1.05rem;color:var(--heading);letter-spacing:-.02em}
+.nav-brand span{color:var(--accent)}
+.nav-links{display:flex;gap:24px;list-style:none}
+.nav-links a{color:var(--text-dim);font-size:.875rem;font-weight:500;transition:color .15s}
+.nav-links a:hover,.nav-links a.active{color:var(--accent)}
+.hamburger{display:none;background:none;border:none;color:var(--text);cursor:pointer}
+.hamburger svg{width:24px;height:24px}
+
+/* ── LAYOUT ─────────────────────────────────────────────── */
+.wrap{max-width:var(--max-w);margin:0 auto;padding:0 24px}
+section{padding:80px 0}
+section + section{border-top:1px solid var(--border)}
+h1,h2,h3{color:var(--heading);font-weight:600;letter-spacing:-.025em}
+h2{font-size:1.75rem;margin-bottom:32px}
+h3{font-size:1.15rem;margin-bottom:16px}
+p + p{margin-top:12px}
+.label{
+  display:inline-block;font-size:.7rem;font-weight:600;text-transform:uppercase;
+  letter-spacing:.08em;padding:3px 8px;border-radius:4px;
+  background:rgba(110,231,183,.1);color:var(--accent);
+}
+
+/* ── HERO ───────────────────────────────────────────────── */
+.hero{
+  padding:120px 0 100px;text-align:center;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 0%,rgba(129,140,248,.08),transparent),
+    radial-gradient(ellipse 50% 40% at 30% 10%,rgba(110,231,183,.06),transparent),
+    radial-gradient(ellipse 50% 40% at 70% 10%,rgba(244,114,182,.06),transparent);
+}
+.hero h1{font-size:clamp(2.4rem,5vw,3.6rem);line-height:1.15;margin-bottom:20px}
+.hero h1 .grad{
+  background:linear-gradient(135deg,var(--accent),var(--accent2),var(--accent3));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.hero p{font-size:1.15rem;color:var(--text-dim);max-width:540px;margin:0 auto 36px}
+.hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:12px 24px;border-radius:8px;font-weight:600;font-size:.9rem;
+  transition:transform .12s,box-shadow .12s;
+}
+.btn:hover{transform:translateY(-1px)}
+.btn-primary{background:var(--accent);color:#0b0e14}
+.btn-primary:hover{color:#0b0e14;box-shadow:0 4px 20px rgba(110,231,183,.25)}
+.btn-ghost{border:1px solid var(--border);color:var(--text)}
+.btn-ghost:hover{border-color:var(--text-dim);color:var(--heading)}
+
+/* ── FEATURES ───────────────────────────────────────────── */
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+.card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:28px;transition:border-color .2s;
+}
+.card:hover{border-color:rgba(110,231,183,.25)}
+.card h3{margin-bottom:12px}
+.card h3 .icon{margin-right:8px}
+.card ul{list-style:none;padding:0}
+.card li{position:relative;padding-left:18px;margin-bottom:6px;font-size:.9rem;color:var(--text-dim)}
+.card li::before{content:'';position:absolute;left:0;top:9px;width:6px;height:6px;border-radius:50%;background:var(--accent);opacity:.6}
+
+/* ── QUICK START ────────────────────────────────────────── */
+.start-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px}
+.start-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.start-card header{
+  padding:16px 24px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.start-card header h3{margin:0}
+.start-card .body{padding:24px}
+.step{display:flex;gap:14px;margin-bottom:16px}
+.step-num{
+  flex-shrink:0;width:28px;height:28px;border-radius:50%;
+  background:rgba(110,231,183,.1);color:var(--accent);
+  font-size:.8rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+}
+.step-text{font-size:.9rem;color:var(--text-dim)}
+.step-text code{
+  font-family:'JetBrains Mono',monospace;font-size:.82rem;
+  background:var(--code-bg);padding:2px 6px;border-radius:4px;color:var(--text);
+}
+
+/* ── CODE BLOCKS ────────────────────────────────────────── */
+.code-wrap{
+  position:relative;background:var(--code-bg);border:1px solid var(--border);
+  border-radius:var(--radius);margin:16px 0;overflow-x:auto;
+}
+.code-wrap pre{
+  font-family:'JetBrains Mono',monospace;font-size:.82rem;line-height:1.7;
+  padding:20px 24px;margin:0;color:var(--text);white-space:pre;overflow-x:auto;
+}
+.copy-btn{
+  position:absolute;top:10px;right:10px;
+  background:var(--surface);border:1px solid var(--border);border-radius:6px;
+  color:var(--text-dim);padding:4px 10px;font-size:.72rem;font-family:'JetBrains Mono',monospace;
+  cursor:pointer;transition:color .15s,border-color .15s;
+}
+.copy-btn:hover{color:var(--accent);border-color:var(--accent)}
+.copy-btn.copied{color:var(--accent);border-color:var(--accent)}
+
+/* ── TABLES ─────────────────────────────────────────────── */
+.table-section{margin-top:32px}
+.table-pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px}
+table{
+  width:100%;border-collapse:collapse;font-size:.88rem;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  overflow:hidden;
+}
+thead{background:rgba(110,231,183,.05)}
+th{
+  text-align:left;padding:12px 16px;font-weight:600;color:var(--heading);
+  font-size:.78rem;text-transform:uppercase;letter-spacing:.06em;
+  border-bottom:1px solid var(--border);
+}
+td{padding:10px 16px;border-bottom:1px solid var(--border);color:var(--text-dim)}
+tr:last-child td{border-bottom:none}
+.id-col{font-family:'JetBrains Mono',monospace;color:var(--accent);font-weight:500;width:60px}
+
+/* ── CLI REFERENCE ──────────────────────────────────────── */
+.cli-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:24px}
+.cli-item{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:20px;
+}
+.cli-item h4{font-size:.85rem;color:var(--heading);margin-bottom:8px;font-weight:600}
+.cli-item code{
+  display:block;font-family:'JetBrains Mono',monospace;font-size:.78rem;
+  color:var(--text-dim);line-height:1.6;word-break:break-all;
+}
+.cli-item .flag{color:var(--accent2)}
+.cli-item .val{color:var(--accent3)}
+
+/* ── PROTOCOL ───────────────────────────────────────────── */
+.proto-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+.proto-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:24px;
+}
+.proto-card h3{font-size:1rem;margin-bottom:12px}
+.proto-card .mono{
+  font-family:'JetBrains Mono',monospace;font-size:.82rem;
+  color:var(--accent);background:var(--code-bg);
+  padding:8px 12px;border-radius:6px;display:inline-block;margin:4px 0;
+}
+.proto-card p{font-size:.88rem;color:var(--text-dim)}
+.byte-row{
+  display:flex;gap:4px;margin:12px 0;flex-wrap:wrap;
+}
+.byte{
+  width:42px;height:36px;display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:500;
+  border-radius:4px;border:1px solid var(--border);color:var(--text-dim);
+}
+.byte.hdr{background:rgba(110,231,183,.1);color:var(--accent);border-color:rgba(110,231,183,.2)}
+.byte.cmd{background:rgba(129,140,248,.1);color:var(--accent2);border-color:rgba(129,140,248,.2)}
+.byte.ftr{background:rgba(244,114,182,.1);color:var(--accent3);border-color:rgba(244,114,182,.2)}
+
+/* ── PLATFORM ───────────────────────────────────────────── */
+.platform-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+.platform-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px}
+.platform-card h3{margin-bottom:12px}
+.platform-card p{font-size:.9rem;color:var(--text-dim)}
+
+/* ── FOOTER ─────────────────────────────────────────────── */
+footer{
+  padding:40px 0;text-align:center;
+  border-top:1px solid var(--border);
+  color:var(--text-dim);font-size:.85rem;
+}
+footer a{color:var(--accent)}
+
+/* ── MOBILE ─────────────────────────────────────────────── */
+@media(max-width:768px){
+  .nav-links{
+    display:none;position:absolute;top:var(--nav-h);left:0;right:0;
+    flex-direction:column;gap:0;background:var(--surface);
+    border-bottom:1px solid var(--border);padding:8px 0;
+  }
+  .nav-links.open{display:flex}
+  .nav-links a{padding:12px 24px;display:block}
+  .hamburger{display:block}
+  .hero{padding:80px 0 60px}
+  .hero h1{font-size:2rem}
+  section{padding:48px 0}
+  .table-pair{grid-template-columns:1fr}
+  .byte-row{gap:2px}
+  .byte{width:36px;height:30px;font-size:.65rem}
+}
+
+/* ── COMMENT HIGHLIGHTING IN CODE ───────────────────────── */
+.code-wrap .cmt{color:#546e7a}
+.code-wrap .str{color:var(--accent)}
+.code-wrap .cmd{color:var(--accent2)}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <div class="nav-brand">Lotus<span>Lamp</span> X</div>
+    <button class="hamburger" aria-label="Menu" onclick="document.querySelector('.nav-links').classList.toggle('open')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+    <ul class="nav-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#start">Quick Start</a></li>
+      <li><a href="#cli">CLI</a></li>
+      <li><a href="#reference">Reference</a></li>
+      <li><a href="#protocol">Protocol</a></li>
+      <li><a href="https://github.com/l0lsec/LotusLampX">GitHub</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="wrap">
+    <span class="label">BLE &middot; Open Source &middot; No App Required</span>
+    <h1 style="margin-top:16px">Control your lights<br>from the <span class="grad">terminal</span></h1>
+    <p>Reverse-engineered BLE protocol for LotusLamp X LED lights.
+       Web dashboard and CLI included &mdash; ditch the phone app.</p>
+    <div class="hero-btns">
+      <a class="btn btn-primary" href="#start">Get Started</a>
+      <a class="btn btn-ghost" href="https://github.com/l0lsec/LotusLampX">View on GitHub</a>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="wrap">
+    <h2>Two interfaces, one protocol</h2>
+    <div class="features-grid">
+      <div class="card">
+        <h3><span class="icon">&#9782;</span> Web UI</h3>
+        <p style="font-size:.9rem;color:var(--text-dim);margin-bottom:14px">
+          Browser-based dashboard at <code style="font-family:'JetBrains Mono',monospace;font-size:.82rem;background:var(--code-bg);padding:2px 6px;border-radius:4px">localhost:8000</code>
+        </p>
+        <ul>
+          <li>Device scanner &amp; dropdown</li>
+          <li>Color wheel + RGB inputs + 16 swatches</li>
+          <li>Brightness &amp; white temperature sliders</li>
+          <li>Effect modes with speed control</li>
+          <li>33 scene presets in a scrollable grid</li>
+          <li>Mic-reactive mode + sensitivity</li>
+          <li>Auto-off timer with quick presets</li>
+          <li>Motion sensor toggle</li>
+          <li>Factory reset with confirmation</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3><span class="icon">&gt;_</span> CLI</h3>
+        <p style="font-size:.9rem;color:var(--text-dim);margin-bottom:14px">
+          One-liner commands, scriptable, automatable
+        </p>
+        <ul>
+          <li>Scan for nearby BLE devices</li>
+          <li>Control single device or <code style="font-family:'JetBrains Mono',monospace;font-size:.82rem;background:var(--code-bg);padding:2px 6px;border-radius:4px">--all</code> at once</li>
+          <li>On/off, color, brightness, speed</li>
+          <li>Warm/cold white temperature</li>
+          <li>Scene presets by ID</li>
+          <li>Mic toggle + sensitivity</li>
+          <li>Auto-off timer</li>
+          <li>Motion sensor with custom delay</li>
+          <li>Debug mode for GATT inspection</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- QUICK START -->
+<section id="start">
+  <div class="wrap">
+    <h2>Quick start</h2>
+    <div class="start-grid">
+      <div class="start-card">
+        <header>
+          <h3>Web UI</h3>
+          <span class="label">Browser</span>
+        </header>
+        <div class="body">
+          <div class="step"><div class="step-num">1</div><div class="step-text">Clone the repo<br><code>git clone https://github.com/l0lsec/LotusLampX.git</code></div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-text">Set up a venv<br><code>cd LotusLampX/web && python -m venv .venv && source .venv/bin/activate</code></div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-text">Install deps<br><code>pip install -r requirements.txt</code></div></div>
+          <div class="step"><div class="step-num">4</div><div class="step-text">Run<br><code>python server.py</code></div></div>
+          <div class="step"><div class="step-num">5</div><div class="step-text">Open <code>http://localhost:8000</code></div></div>
+        </div>
+      </div>
+      <div class="start-card">
+        <header>
+          <h3>CLI</h3>
+          <span class="label">Terminal</span>
+        </header>
+        <div class="body">
+          <div class="step"><div class="step-num">1</div><div class="step-text">Clone the repo<br><code>git clone https://github.com/l0lsec/LotusLampX.git</code></div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-text">Set up a venv<br><code>cd LotusLampX/cli && python -m venv .venv && source .venv/bin/activate</code></div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-text">Install deps<br><code>pip install -r requirements.txt</code></div></div>
+          <div class="step"><div class="step-num">4</div><div class="step-text">Scan for devices<br><code>python main.py scan --name MELK</code></div></div>
+          <div class="step"><div class="step-num">5</div><div class="step-text">Control<br><code>python main.py --all on</code></div></div>
+        </div>
+      </div>
+    </div>
+    <p style="margin-top:20px;font-size:.88rem;color:var(--text-dim)">
+      <strong style="color:var(--heading)">Requirements:</strong> Python 3.10+, Bluetooth adapter.
+      macOS (CoreBluetooth) or Linux (BlueZ 5.43+).
+    </p>
+  </div>
+</section>
+
+<!-- CLI REFERENCE -->
+<section id="cli">
+  <div class="wrap">
+    <h2>CLI cheatsheet</h2>
+    <div class="code-wrap">
+      <button class="copy-btn" onclick="copyBlock(this)">copy</button>
+<pre><span class="cmt"># Scan for devices</span>
+python main.py scan --name MELK
+
+<span class="cmt"># All devices at once</span>
+python main.py --all on
+python main.py --all off
+python main.py --all color 255 0 128
+python main.py --all brightness 200
+
+<span class="cmt"># Single device</span>
+python main.py -d DEVICE_ADDR on
+python main.py -d DEVICE_ADDR color 0 255 0
+
+<span class="cmt"># Effects</span>
+python main.py --all mode 1            <span class="cmt"># jump</span>
+python main.py --all mode 3            <span class="cmt"># breathe</span>
+python main.py --all speed 150         <span class="cmt"># medium speed</span>
+
+<span class="cmt"># Scenes</span>
+python main.py --all scene 10          <span class="cmt"># disco</span>
+python main.py --all scene 16          <span class="cmt"># ocean</span>
+python main.py --all scene 154         <span class="cmt"># meteor</span>
+
+<span class="cmt"># White temperature</span>
+python main.py --all warm 255 0        <span class="cmt"># full warm</span>
+python main.py --all warm 0 255        <span class="cmt"># full cold</span>
+
+<span class="cmt"># Mic reactive</span>
+python main.py --all mic on
+python main.py --all sensitivity 200
+
+<span class="cmt"># Timer &amp; sensor</span>
+python main.py --all timer 300         <span class="cmt"># off in 5 min</span>
+python main.py --all sensor on --delay 60</pre>
+    </div>
+
+    <h3 style="margin-top:36px">All commands</h3>
+    <div class="cli-grid">
+      <div class="cli-item"><h4>scan</h4><code>python main.py scan <span class="flag">--name</span> <span class="val">MELK</span> <span class="flag">--timeout</span> <span class="val">10</span></code></div>
+      <div class="cli-item"><h4>on / off</h4><code>python main.py <span class="flag">--all</span> on</code></div>
+      <div class="cli-item"><h4>color</h4><code>python main.py <span class="flag">--all</span> color <span class="val">R G B</span></code></div>
+      <div class="cli-item"><h4>brightness</h4><code>python main.py <span class="flag">--all</span> brightness <span class="val">0-255</span></code></div>
+      <div class="cli-item"><h4>mode</h4><code>python main.py <span class="flag">--all</span> mode <span class="val">ID</span></code></div>
+      <div class="cli-item"><h4>speed</h4><code>python main.py <span class="flag">--all</span> speed <span class="val">0-255</span></code></div>
+      <div class="cli-item"><h4>warm</h4><code>python main.py <span class="flag">--all</span> warm <span class="val">W C</span></code></div>
+      <div class="cli-item"><h4>mic</h4><code>python main.py <span class="flag">--all</span> mic <span class="val">on|off</span></code></div>
+      <div class="cli-item"><h4>sensitivity</h4><code>python main.py <span class="flag">--all</span> sensitivity <span class="val">0-255</span></code></div>
+      <div class="cli-item"><h4>scene</h4><code>python main.py <span class="flag">--all</span> scene <span class="val">ID</span></code></div>
+      <div class="cli-item"><h4>timer</h4><code>python main.py <span class="flag">--all</span> timer <span class="val">SECONDS</span></code></div>
+      <div class="cli-item"><h4>sensor</h4><code>python main.py <span class="flag">--all</span> sensor <span class="val">on|off</span> <span class="flag">--delay</span> <span class="val">N</span></code></div>
+      <div class="cli-item"><h4>reset</h4><code>python main.py <span class="flag">-d</span> <span class="val">ADDR</span> reset</code></div>
+      <div class="cli-item"><h4>debug</h4><code>python main.py <span class="flag">-d</span> <span class="val">ADDR</span> debug</code></div>
+    </div>
+
+    <p style="margin-top:24px;font-size:.88rem;color:var(--text-dim)">
+      <strong style="color:var(--heading)">Tip:</strong> Set <code style="font-family:'JetBrains Mono',monospace;font-size:.82rem;background:var(--code-bg);padding:2px 6px;border-radius:4px">LOTUSLAMP_DEVICE</code>
+      as an env var to skip <code style="font-family:'JetBrains Mono',monospace;font-size:.82rem;background:var(--code-bg);padding:2px 6px;border-radius:4px">-d</code> every time.
+    </p>
+  </div>
+</section>
+
+<!-- REFERENCE TABLES -->
+<section id="reference">
+  <div class="wrap">
+    <h2>Scene &amp; mode reference</h2>
+
+    <div class="table-section">
+      <h3>Modes</h3>
+      <p style="font-size:.88rem;color:var(--text-dim);margin-bottom:16px">Basic animation patterns &mdash; <code style="font-family:'JetBrains Mono',monospace;font-size:.82rem;background:var(--code-bg);padding:2px 6px;border-radius:4px">python main.py --all mode ID</code></p>
+      <table>
+        <thead><tr><th>ID</th><th>Effect</th></tr></thead>
+        <tbody>
+          <tr><td class="id-col">1</td><td>Jump (color jumping)</td></tr>
+          <tr><td class="id-col">2</td><td>Strobe</td></tr>
+          <tr><td class="id-col">3</td><td>Breathe (fade in/out)</td></tr>
+          <tr><td class="id-col">4</td><td>Warning (flash)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="table-section">
+      <h3>Scenes</h3>
+      <p style="font-size:.88rem;color:var(--text-dim);margin-bottom:16px">Preset lighting scenes &mdash; <code style="font-family:'JetBrains Mono',monospace;font-size:.82rem;background:var(--code-bg);padding:2px 6px;border-radius:4px">python main.py --all scene ID</code></p>
+      <div class="table-pair">
+        <table>
+          <thead><tr><th>ID</th><th>Scene</th></tr></thead>
+          <tbody>
+            <tr><td class="id-col">1</td><td>Sunrise</td></tr>
+            <tr><td class="id-col">2</td><td>Sunset</td></tr>
+            <tr><td class="id-col">3</td><td>Birthday</td></tr>
+            <tr><td class="id-col">4</td><td>Candlelight</td></tr>
+            <tr><td class="id-col">5</td><td>Fireworks</td></tr>
+            <tr><td class="id-col">6</td><td>Party</td></tr>
+            <tr><td class="id-col">7</td><td>Dating</td></tr>
+            <tr><td class="id-col">8</td><td>Starry Sky</td></tr>
+            <tr><td class="id-col">9</td><td>Romantic</td></tr>
+            <tr><td class="id-col">10</td><td>Disco</td></tr>
+            <tr><td class="id-col">11</td><td>Rainbow</td></tr>
+            <tr><td class="id-col">12</td><td>Movie</td></tr>
+            <tr><td class="id-col">13</td><td>Christmas</td></tr>
+            <tr><td class="id-col">14</td><td>Flowing</td></tr>
+            <tr><td class="id-col">15</td><td>Sleeping</td></tr>
+            <tr><td class="id-col">16</td><td>Ocean</td></tr>
+            <tr><td class="id-col">17</td><td>Forest</td></tr>
+          </tbody>
+        </table>
+        <table>
+          <thead><tr><th>ID</th><th>Scene</th></tr></thead>
+          <tbody>
+            <tr><td class="id-col">18</td><td>Reading</td></tr>
+            <tr><td class="id-col">19</td><td>Working</td></tr>
+            <tr><td class="id-col">20</td><td>Dazzle</td></tr>
+            <tr><td class="id-col">21</td><td>Gentle</td></tr>
+            <tr><td class="id-col">22</td><td>Wedding</td></tr>
+            <tr><td class="id-col">23</td><td>Snow</td></tr>
+            <tr><td class="id-col">24</td><td>Fire</td></tr>
+            <tr><td class="id-col">25</td><td>Lightning</td></tr>
+            <tr><td class="id-col">26</td><td>Valentine's Day</td></tr>
+            <tr><td class="id-col">27</td><td>Halloween</td></tr>
+            <tr><td class="id-col">28</td><td>Warning</td></tr>
+            <tr><td class="id-col">150</td><td>Time Machine</td></tr>
+            <tr><td class="id-col">152</td><td>Time Machine 2</td></tr>
+            <tr><td class="id-col">154</td><td>Meteor</td></tr>
+            <tr><td class="id-col">155</td><td>Meteor 2</td></tr>
+            <tr><td class="id-col">156</td><td>Fireworks Show</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROTOCOL -->
+<section id="protocol">
+  <div class="wrap">
+    <h2>Protocol overview</h2>
+    <p style="color:var(--text-dim);margin-bottom:28px">
+      Reverse-engineered from the Android app's <code style="font-family:'JetBrains Mono',monospace;font-size:.82rem;background:var(--code-bg);padding:2px 6px;border-radius:4px">E1Achieve</code>,
+      <code style="font-family:'JetBrains Mono',monospace;font-size:.82rem;background:var(--code-bg);padding:2px 6px;border-radius:4px">BlePackagingDevice</code>, and
+      <code style="font-family:'JetBrains Mono',monospace;font-size:.82rem;background:var(--code-bg);padding:2px 6px;border-radius:4px">AppConstant</code> classes.
+    </p>
+
+    <div class="proto-grid">
+      <div class="proto-card">
+        <h3>E1 Frame Format</h3>
+        <p>Every command is a fixed 9-byte frame written via GATT with <code style="font-family:'JetBrains Mono',monospace;font-size:.82rem">WRITE_TYPE_NO_RESPONSE</code>:</p>
+        <div class="byte-row">
+          <div class="byte hdr">0x7E</div>
+          <div class="byte">LEN</div>
+          <div class="byte cmd">CMD</div>
+          <div class="byte">D0</div>
+          <div class="byte">D1</div>
+          <div class="byte">D2</div>
+          <div class="byte">D3</div>
+          <div class="byte">0x00</div>
+          <div class="byte ftr">0xEF</div>
+        </div>
+        <p style="margin-top:8px;font-size:.82rem">
+          <span style="color:var(--accent)">Header</span> &middot;
+          <span style="color:var(--accent2)">Command ID</span> &middot;
+          Data bytes &middot;
+          <span style="color:var(--accent3)">Footer</span>
+        </p>
+      </div>
+      <div class="proto-card">
+        <h3>GATT UUIDs</h3>
+        <p>Service:</p>
+        <div class="mono">0000FFF0-0000-1000-8000-00805F9B34FB</div>
+        <p>Write characteristic:</p>
+        <div class="mono">0000FFF3-0000-1000-8000-00805F9B34FB</div>
+        <p>Read / notify:</p>
+        <div class="mono">0000FFF4-0000-1000-8000-00805F9B34FB</div>
+      </div>
+      <div class="proto-card">
+        <h3>Device identification</h3>
+        <p>MELK-OA10 devices are classified as <strong style="color:var(--heading)">SYMPHONY</strong> (type 30)
+        by the app's <code style="font-family:'JetBrains Mono',monospace;font-size:.82rem">LPHelper.deviceTypeWithName</code>.</p>
+        <p style="margin-top:8px">They use <strong style="color:var(--heading)">plain, unencrypted</strong> E1 frames &mdash;
+        encryption is only for devices matching the <code style="font-family:'JetBrains Mono',monospace;font-size:.82rem">ELK-*</code> identifier pattern.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PLATFORM NOTES -->
+<section id="platform">
+  <div class="wrap">
+    <h2>Platform notes</h2>
+    <div class="platform-grid">
+      <div class="platform-card">
+        <h3>macOS</h3>
+        <p>Bluetooth must be enabled in System Settings.
+          The terminal needs Bluetooth access permission.</p>
+        <p style="margin-top:8px">On macOS, bleak uses CoreBluetooth UUIDs as device addresses
+          (e.g. <code style="font-family:'JetBrains Mono',monospace;font-size:.82rem;background:var(--code-bg);padding:2px 6px;border-radius:4px">12345678-ABCD-...</code>)
+          rather than MAC addresses.</p>
+      </div>
+      <div class="platform-card">
+        <h3>Linux</h3>
+        <p>Requires BlueZ 5.43+. On modern kernels (5.10+) no root is needed.</p>
+        <p style="margin-top:8px">On older setups, grant raw network capability:</p>
+        <div class="code-wrap" style="margin-top:8px">
+          <pre>sudo setcap cap_net_raw+eip $(readlink -f $(which python3))</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="wrap">
+    <p>
+      <a href="https://github.com/l0lsec/LotusLampX">LotusLamp X</a> &mdash;
+      reverse-engineered BLE light control.
+      Built by <a href="https://github.com/l0lsec">l0lsec</a>.
+    </p>
+  </div>
+</footer>
+
+<script>
+function copyBlock(btn){
+  const pre=btn.parentElement.querySelector('pre');
+  const text=pre.innerText;
+  navigator.clipboard.writeText(text).then(()=>{
+    btn.textContent='copied!';btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='copy';btn.classList.remove('copied')},1500);
+  });
+}
+
+const sections=document.querySelectorAll('section[id]');
+const navLinks=document.querySelectorAll('.nav-links a[href^="#"]');
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      navLinks.forEach(l=>l.classList.remove('active'));
+      const link=document.querySelector('.nav-links a[href="#'+e.target.id+'"]');
+      if(link)link.classList.add('active');
+    }
+  });
+},{rootMargin:'-40% 0px -55% 0px'});
+sections.forEach(s=>obs.observe(s));
+
+document.querySelectorAll('.nav-links a').forEach(a=>{
+  a.addEventListener('click',()=>document.querySelector('.nav-links').classList.remove('open'));
+});
+</script>
+</body>
+</html>
