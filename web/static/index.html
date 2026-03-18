@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LotusLamp X Control</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:       #0c0e14;
+  --surface:  #151821;
+  --surface2: #1c2030;
+  --border:   #262a3a;
+  --text:     #e4e6ef;
+  --text2:    #8b8fa8;
+  --accent:   #6c5ce7;
+  --accent2:  #a29bfe;
+  --green:    #00e676;
+  --red:      #ff5252;
+  --orange:   #ffab40;
+  --radius:   12px;
+  --shadow:   0 4px 24px rgba(0,0,0,.4);
+}
+html{font-size:15px}
+body{
+  font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+  background:var(--bg);color:var(--text);
+  min-height:100vh;padding:1rem;
+  display:flex;flex-direction:column;align-items:center;
+}
+h1{font-size:1.4rem;font-weight:600;letter-spacing:.02em}
+h2{font-size:1rem;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem}
+
+/* Layout */
+.shell{max-width:860px;width:100%}
+.header{
+  display:flex;align-items:center;gap:.75rem;
+  padding:1rem 0 1.25rem;border-bottom:1px solid var(--border);margin-bottom:1.25rem;
+}
+.header .logo{
+  width:36px;height:36px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),#fd79a8);
+  display:flex;align-items:center;justify-content:center;font-size:1.1rem;
+}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:680px){.grid{grid-template-columns:1fr}}
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:1.1rem;box-shadow:var(--shadow);
+}
+.card.span{grid-column:1/-1}
+.toast{
+  position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);
+  background:var(--surface2);border:1px solid var(--border);
+  padding:.6rem 1.2rem;border-radius:8px;font-size:.85rem;
+  box-shadow:var(--shadow);opacity:0;transition:opacity .3s;pointer-events:none;z-index:99;
+}
+.toast.show{opacity:1}
+.toast.err{border-color:var(--red);color:var(--red)}
+
+/* Status badge */
+.badge{
+  display:inline-flex;align-items:center;gap:.35rem;font-size:.78rem;
+  padding:.2rem .6rem;border-radius:20px;background:var(--surface2);color:var(--text2);
+}
+.badge .dot{width:7px;height:7px;border-radius:50%;background:var(--text2)}
+.badge.ok .dot{background:var(--green)}
+.badge.ok{color:var(--green)}
+.badge.warn .dot{background:var(--orange)}
+.badge.warn{color:var(--orange)}
+
+/* Buttons */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:.4rem;
+  padding:.5rem 1rem;border-radius:8px;border:1px solid var(--border);
+  background:var(--surface2);color:var(--text);font-size:.85rem;
+  cursor:pointer;transition:all .15s;font-family:inherit;
+}
+.btn:hover{background:var(--border);border-color:var(--accent)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:#7c6ef7}
+.btn.danger{border-color:var(--red);color:var(--red)}
+.btn.danger:hover{background:var(--red);color:#fff}
+.btn.sm{padding:.35rem .7rem;font-size:.8rem}
+.btn:disabled{opacity:.4;pointer-events:none}
+
+/* Power toggle */
+.power-row{display:flex;align-items:center;gap:1rem}
+.power-btn{
+  width:72px;height:72px;border-radius:50%;border:2px solid var(--border);
+  background:var(--surface2);cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;font-size:1.7rem;
+}
+.power-btn:hover{border-color:var(--accent)}
+.power-btn.on{background:var(--green);border-color:var(--green);color:#0c0e14}
+.power-label{font-size:1.1rem;font-weight:600}
+
+/* Sliders */
+.slider-group{margin-bottom:.8rem}
+.slider-group:last-child{margin-bottom:0}
+.slider-label{display:flex;justify-content:space-between;font-size:.82rem;color:var(--text2);margin-bottom:.3rem}
+input[type=range]{
+  -webkit-appearance:none;width:100%;height:6px;border-radius:3px;
+  background:var(--surface2);outline:none;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+  background:var(--accent);cursor:pointer;border:2px solid var(--bg);
+}
+
+/* Color picker area */
+.color-area{display:flex;flex-wrap:wrap;gap:.75rem;align-items:flex-start}
+.color-picker-wrap{position:relative}
+.color-picker-wrap input[type=color]{
+  width:100px;height:100px;border:none;border-radius:var(--radius);
+  cursor:pointer;background:transparent;padding:0;
+}
+.color-picker-wrap input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+.color-picker-wrap input[type=color]::-webkit-color-swatch{border-radius:var(--radius);border:2px solid var(--border)}
+.rgb-inputs{display:flex;gap:.4rem;align-items:center}
+.rgb-inputs label{font-size:.75rem;color:var(--text2);display:flex;flex-direction:column;gap:.2rem;align-items:center}
+.rgb-inputs input[type=number]{
+  width:52px;padding:.3rem;border-radius:6px;border:1px solid var(--border);
+  background:var(--surface2);color:var(--text);text-align:center;font-size:.85rem;
+  font-family:inherit;
+}
+.rgb-inputs input[type=number]:focus{outline:none;border-color:var(--accent)}
+.swatches{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.5rem}
+.swatch{
+  width:28px;height:28px;border-radius:6px;border:2px solid transparent;
+  cursor:pointer;transition:border-color .15s,transform .1s;
+}
+.swatch:hover{border-color:var(--text);transform:scale(1.15)}
+.color-preview{
+  width:48px;height:48px;border-radius:10px;border:2px solid var(--border);
+  flex-shrink:0;
+}
+
+/* Mode buttons */
+.mode-btns{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:.75rem}
+.mode-btns .btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* Scene grid */
+.scene-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:.4rem;max-height:240px;overflow-y:auto;padding-right:.3rem}
+.scene-grid::-webkit-scrollbar{width:4px}
+.scene-grid::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.scene-chip{
+  padding:.4rem .55rem;border-radius:6px;border:1px solid var(--border);
+  background:var(--surface2);font-size:.78rem;cursor:pointer;transition:all .15s;
+  text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.scene-chip:hover{border-color:var(--accent);background:var(--border)}
+.scene-chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
+
+/* Toggle switch */
+.toggle{position:relative;width:46px;height:26px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle .track{
+  position:absolute;inset:0;border-radius:13px;background:var(--surface2);
+  border:1px solid var(--border);cursor:pointer;transition:background .2s;
+}
+.toggle .track::after{
+  content:'';position:absolute;top:3px;left:3px;width:18px;height:18px;
+  border-radius:50%;background:var(--text2);transition:transform .2s,background .2s;
+}
+.toggle input:checked+.track{background:var(--accent);border-color:var(--accent)}
+.toggle input:checked+.track::after{transform:translateX(20px);background:#fff}
+
+/* Toggle row */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem}
+.toggle-row:last-child{margin-bottom:0}
+
+/* Timer quick buttons */
+.timer-row{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.75rem}
+
+/* Number input */
+input[type=number].field{
+  width:80px;padding:.4rem .5rem;border-radius:6px;border:1px solid var(--border);
+  background:var(--surface2);color:var(--text);font-family:inherit;font-size:.85rem;
+}
+input[type=number].field:focus{outline:none;border-color:var(--accent)}
+
+/* Select */
+select.field{
+  width:100%;padding:.45rem .6rem;border-radius:8px;border:1px solid var(--border);
+  background:var(--surface2);color:var(--text);font-family:inherit;font-size:.85rem;
+  cursor:pointer;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238b8fa8'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right .7rem center;
+  padding-right:2rem;
+}
+select.field:focus{outline:none;border-color:var(--accent)}
+
+/* Danger zone */
+.danger-card{border-color:#3a1c1c}
+.danger-card h2{color:var(--red)}
+
+/* Modal */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:100;
+  display:none;align-items:center;justify-content:center;
+}
+.modal-overlay.open{display:flex}
+.modal{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:1.5rem;max-width:380px;width:90%;box-shadow:var(--shadow);
+}
+.modal h3{margin-bottom:.75rem;font-size:1.05rem}
+.modal p{color:var(--text2);font-size:.88rem;margin-bottom:1.2rem;line-height:1.5}
+.modal .actions{display:flex;gap:.5rem;justify-content:flex-end}
+
+/* Loader */
+.spinner{
+  display:inline-block;width:14px;height:14px;border:2px solid var(--text2);
+  border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Responsive tweaks */
+.device-bar{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">&#x1F4A1;</div>
+    <div>
+      <h1>LotusLamp X</h1>
+      <span style="font-size:.78rem;color:var(--text2)">BLE Light Controller</span>
+    </div>
+    <div style="margin-left:auto" id="statusBadge">
+      <span class="badge"><span class="dot"></span> No device</span>
+    </div>
+  </div>
+
+  <!-- Device Panel -->
+  <div class="card span" style="margin-bottom:1rem">
+    <h2>Device</h2>
+    <div class="device-bar">
+      <button class="btn primary" id="btnScan" onclick="doScan()">Scan</button>
+      <select class="field" id="selDevice" style="width:auto;min-width:200px;flex:1" onchange="selectDevice()">
+        <option value="">-- select device --</option>
+      </select>
+      <label style="display:flex;align-items:center;gap:.4rem;font-size:.82rem;color:var(--text2)">
+        <span class="toggle" style="width:38px;height:22px">
+          <input type="checkbox" id="chkEncrypted">
+          <span class="track" style="border-radius:11px" onclick="toggleEncrypted()"></span>
+        </span>
+        Encrypted (ELK)
+      </label>
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <!-- Power -->
+    <div class="card">
+      <h2>Power</h2>
+      <div class="power-row">
+        <button class="power-btn" id="btnPower" onclick="togglePower()">&#x23FB;</button>
+        <span class="power-label" id="lblPower">OFF</span>
+      </div>
+    </div>
+
+    <!-- Brightness -->
+    <div class="card">
+      <h2>Brightness</h2>
+      <div class="slider-group">
+        <div class="slider-label"><span>Level</span><span id="valBrightness">128</span></div>
+        <input type="range" id="slBrightness" min="0" max="255" value="128"
+               oninput="document.getElementById('valBrightness').textContent=this.value"
+               onchange="sendBrightness()">
+      </div>
+    </div>
+
+    <!-- Color -->
+    <div class="card span">
+      <h2>Color</h2>
+      <div class="color-area">
+        <div class="color-picker-wrap">
+          <input type="color" id="inpColor" value="#6c5ce7" onchange="colorFromPicker()">
+        </div>
+        <div>
+          <div class="rgb-inputs">
+            <label>R <input type="number" id="inpR" min="0" max="255" value="108" onchange="colorFromRGB()"></label>
+            <label>G <input type="number" id="inpG" min="0" max="255" value="92" onchange="colorFromRGB()"></label>
+            <label>B <input type="number" id="inpB" min="0" max="255" value="231" onchange="colorFromRGB()"></label>
+          </div>
+          <div class="swatches" id="swatches"></div>
+        </div>
+        <div class="color-preview" id="colorPreview" style="background:#6c5ce7"></div>
+      </div>
+    </div>
+
+    <!-- White Temperature -->
+    <div class="card">
+      <h2>White Temperature</h2>
+      <div class="slider-group">
+        <div class="slider-label"><span>Warm</span><span id="valWarm">128</span></div>
+        <input type="range" id="slWarm" min="0" max="255" value="128"
+               style="background:linear-gradient(90deg,#1a1a2e,#ffab40)"
+               oninput="document.getElementById('valWarm').textContent=this.value"
+               onchange="sendWarm()">
+      </div>
+      <div class="slider-group">
+        <div class="slider-label"><span>Cold</span><span id="valCold">128</span></div>
+        <input type="range" id="slCold" min="0" max="255" value="128"
+               style="background:linear-gradient(90deg,#1a1a2e,#e0f0ff)"
+               oninput="document.getElementById('valCold').textContent=this.value"
+               onchange="sendWarm()">
+      </div>
+    </div>
+
+    <!-- Effects -->
+    <div class="card">
+      <h2>Effects</h2>
+      <div class="mode-btns" id="modeBtns">
+        <button class="btn sm" data-mode="1" onclick="sendMode(1,this)">Jump</button>
+        <button class="btn sm" data-mode="2" onclick="sendMode(2,this)">Strobe</button>
+        <button class="btn sm" data-mode="3" onclick="sendMode(3,this)">Breathe</button>
+        <button class="btn sm" data-mode="4" onclick="sendMode(4,this)">Warning</button>
+      </div>
+      <div class="slider-group">
+        <div class="slider-label"><span>Speed</span><span id="valSpeed">128</span></div>
+        <input type="range" id="slSpeed" min="0" max="255" value="128"
+               oninput="document.getElementById('valSpeed').textContent=this.value"
+               onchange="sendSpeed()">
+      </div>
+    </div>
+
+    <!-- Scenes -->
+    <div class="card span">
+      <h2>Scenes</h2>
+      <div class="scene-grid" id="sceneGrid"></div>
+    </div>
+
+    <!-- Mic Reactive -->
+    <div class="card">
+      <h2>Mic Reactive</h2>
+      <div class="toggle-row">
+        <span>Microphone</span>
+        <label class="toggle">
+          <input type="checkbox" id="chkMic" onchange="sendMic()">
+          <span class="track"></span>
+        </label>
+      </div>
+      <div class="slider-group">
+        <div class="slider-label"><span>Sensitivity</span><span id="valSens">128</span></div>
+        <input type="range" id="slSens" min="0" max="255" value="128"
+               oninput="document.getElementById('valSens').textContent=this.value"
+               onchange="sendSensitivity()">
+      </div>
+    </div>
+
+    <!-- Timer -->
+    <div class="card">
+      <h2>Auto-Off Timer</h2>
+      <div class="timer-row">
+        <button class="btn sm" onclick="setTimer(900)">15m</button>
+        <button class="btn sm" onclick="setTimer(1800)">30m</button>
+        <button class="btn sm" onclick="setTimer(3600)">1h</button>
+        <button class="btn sm" onclick="setTimer(7200)">2h</button>
+        <button class="btn sm" onclick="setTimer(0)">Cancel</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <label style="font-size:.82rem;color:var(--text2)">Custom (sec):</label>
+        <input type="number" class="field" id="inpTimer" min="0" value="0">
+        <button class="btn sm" onclick="setTimer(+document.getElementById('inpTimer').value)">Set</button>
+      </div>
+    </div>
+
+    <!-- Motion Sensor -->
+    <div class="card">
+      <h2>Motion Sensor</h2>
+      <div class="toggle-row">
+        <span>Sensor</span>
+        <label class="toggle">
+          <input type="checkbox" id="chkSensor" onchange="sendSensor()">
+          <span class="track"></span>
+        </label>
+      </div>
+      <div style="display:flex;align-items:center;gap:.5rem;margin-top:.4rem">
+        <label style="font-size:.82rem;color:var(--text2)">Delay (sec):</label>
+        <input type="number" class="field" id="inpSensorDelay" min="1" value="30">
+      </div>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="card danger-card">
+      <h2>Danger Zone</h2>
+      <p style="font-size:.83rem;color:var(--text2);margin-bottom:.6rem">This will erase all device settings and restore factory defaults.</p>
+      <button class="btn danger" onclick="confirmReset()">Factory Reset</button>
+    </div>
+
+  </div><!-- /grid -->
+</div><!-- /shell -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Reset confirmation modal -->
+<div class="modal-overlay" id="modalReset">
+  <div class="modal">
+    <h3>Factory Reset</h3>
+    <p>Are you sure? This will restore the device to factory defaults. This action cannot be undone.</p>
+    <div class="actions">
+      <button class="btn" onclick="closeResetModal()">Cancel</button>
+      <button class="btn danger" onclick="doReset()">Reset Device</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------------------------------------------------------------------------
+// State
+// ---------------------------------------------------------------------------
+let powerOn = false;
+let activeScene = null;
+let activeMode = null;
+
+// ---------------------------------------------------------------------------
+// API helpers
+// ---------------------------------------------------------------------------
+async function api(method, path, body) {
+  const opts = { method, headers: {} };
+  if (body !== undefined) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  const res = await fetch('/api/' + path, opts);
+  const data = await res.json();
+  if (!res.ok) {
+    const msg = data.detail || 'Request failed';
+    throw new Error(msg);
+  }
+  return data;
+}
+
+function toast(msg, isError) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (isError ? ' err' : '');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.className = 'toast', 2500);
+}
+
+function setBadge(text, cls) {
+  document.getElementById('statusBadge').innerHTML =
+    `<span class="badge ${cls}"><span class="dot"></span> ${text}</span>`;
+}
+
+// ---------------------------------------------------------------------------
+// Device management
+// ---------------------------------------------------------------------------
+async function doScan() {
+  const btn = document.getElementById('btnScan');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Scanning';
+  try {
+    const devices = await api('GET', 'scan?timeout=5&name=MELK');
+    const sel = document.getElementById('selDevice');
+    sel.innerHTML = '<option value="">-- select device --</option>';
+    devices.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.address;
+      opt.textContent = `${d.name}  (${d.rssi} dBm)`;
+      sel.appendChild(opt);
+    });
+    toast(`Found ${devices.length} device(s)`);
+    if (devices.length === 0) setBadge('No devices found', 'warn');
+  } catch (e) {
+    toast(e.message, true);
+  }
+  btn.disabled = false;
+  btn.innerHTML = 'Scan';
+}
+
+async function selectDevice() {
+  const addr = document.getElementById('selDevice').value;
+  if (!addr) { setBadge('No device', ''); return; }
+  const enc = document.getElementById('chkEncrypted').checked;
+  try {
+    await api('POST', 'device/select', { address: addr, encrypted: enc });
+    setBadge(addr.substring(0, 12) + '...', 'ok');
+    toast('Device selected');
+  } catch (e) { toast(e.message, true); }
+}
+
+function toggleEncrypted() {
+  const addr = document.getElementById('selDevice').value;
+  if (addr) selectDevice();
+}
+
+// ---------------------------------------------------------------------------
+// Power
+// ---------------------------------------------------------------------------
+async function togglePower() {
+  const target = !powerOn;
+  try {
+    await api('POST', target ? 'on' : 'off');
+    powerOn = target;
+    updatePowerUI();
+    toast(powerOn ? 'Light ON' : 'Light OFF');
+  } catch (e) { toast(e.message, true); }
+}
+
+function updatePowerUI() {
+  const btn = document.getElementById('btnPower');
+  const lbl = document.getElementById('lblPower');
+  btn.className = 'power-btn' + (powerOn ? ' on' : '');
+  lbl.textContent = powerOn ? 'ON' : 'OFF';
+}
+
+// ---------------------------------------------------------------------------
+// Color
+// ---------------------------------------------------------------------------
+const PRESET_COLORS = [
+  '#ff0000','#ff4500','#ff8c00','#ffd700','#ffff00','#adff2f',
+  '#00ff00','#00fa9a','#00ffff','#1e90ff','#0000ff','#8a2be2',
+  '#ff00ff','#ff1493','#ffffff','#ffb6c1'
+];
+
+function initSwatches() {
+  const wrap = document.getElementById('swatches');
+  PRESET_COLORS.forEach(c => {
+    const el = document.createElement('div');
+    el.className = 'swatch';
+    el.style.background = c;
+    el.onclick = () => { setColorHex(c); sendColor(); };
+    wrap.appendChild(el);
+  });
+}
+
+function hexToRgb(hex) {
+  const n = parseInt(hex.replace('#',''), 16);
+  return [(n>>16)&255, (n>>8)&255, n&255];
+}
+function rgbToHex(r,g,b) {
+  return '#' + [r,g,b].map(v => v.toString(16).padStart(2,'0')).join('');
+}
+
+function setColorHex(hex) {
+  const [r,g,b] = hexToRgb(hex);
+  document.getElementById('inpR').value = r;
+  document.getElementById('inpG').value = g;
+  document.getElementById('inpB').value = b;
+  document.getElementById('inpColor').value = hex;
+  document.getElementById('colorPreview').style.background = hex;
+}
+
+function colorFromPicker() {
+  setColorHex(document.getElementById('inpColor').value);
+  sendColor();
+}
+
+function colorFromRGB() {
+  const r = +document.getElementById('inpR').value;
+  const g = +document.getElementById('inpG').value;
+  const b = +document.getElementById('inpB').value;
+  const hex = rgbToHex(r, g, b);
+  document.getElementById('inpColor').value = hex;
+  document.getElementById('colorPreview').style.background = hex;
+  sendColor();
+}
+
+async function sendColor() {
+  const r = +document.getElementById('inpR').value;
+  const g = +document.getElementById('inpG').value;
+  const b = +document.getElementById('inpB').value;
+  try {
+    await api('POST', 'color', { r, g, b });
+    toast(`Color: ${r}, ${g}, ${b}`);
+  } catch (e) { toast(e.message, true); }
+}
+
+// ---------------------------------------------------------------------------
+// Brightness
+// ---------------------------------------------------------------------------
+let _brightDebounce;
+async function sendBrightness() {
+  clearTimeout(_brightDebounce);
+  _brightDebounce = setTimeout(async () => {
+    const level = +document.getElementById('slBrightness').value;
+    try {
+      await api('POST', 'brightness', { level });
+    } catch (e) { toast(e.message, true); }
+  }, 150);
+}
+
+// ---------------------------------------------------------------------------
+// White temperature
+// ---------------------------------------------------------------------------
+let _warmDebounce;
+async function sendWarm() {
+  clearTimeout(_warmDebounce);
+  _warmDebounce = setTimeout(async () => {
+    const warm = +document.getElementById('slWarm').value;
+    const cold = +document.getElementById('slCold').value;
+    try {
+      await api('POST', 'warm', { warm, cold });
+    } catch (e) { toast(e.message, true); }
+  }, 150);
+}
+
+// ---------------------------------------------------------------------------
+// Effects
+// ---------------------------------------------------------------------------
+async function sendMode(id, el) {
+  document.querySelectorAll('#modeBtns .btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  activeMode = id;
+  try {
+    await api('POST', 'mode', { mode_id: id });
+    toast('Mode: ' + el.textContent);
+  } catch (e) { toast(e.message, true); }
+}
+
+let _speedDebounce;
+async function sendSpeed() {
+  clearTimeout(_speedDebounce);
+  _speedDebounce = setTimeout(async () => {
+    const level = +document.getElementById('slSpeed').value;
+    try {
+      await api('POST', 'speed', { level });
+    } catch (e) { toast(e.message, true); }
+  }, 150);
+}
+
+// ---------------------------------------------------------------------------
+// Scenes
+// ---------------------------------------------------------------------------
+const SCENES = [
+  [1,'Sunrise'],[2,'Sunset'],[3,'Movie Night'],[4,'Birthday'],
+  [5,'Candlelight'],[6,'Snowflake'],[7,'Galaxy'],[8,'Rainbow'],
+  [9,'Pulse'],[10,'Ocean'],[11,'Forest'],[12,'Lava'],
+  [13,'Northern Light'],[14,'Valentine'],[15,'Firework'],[16,'Spring'],
+  [17,'Summer'],[18,'Autumn'],[19,'Winter'],[20,'Party'],
+  [21,'Romantic'],[22,'Reading'],[23,'Night Light'],[24,'Campfire'],
+  [25,'Halloween'],[26,'Christmas'],[27,'Gradient'],[28,'Twinkle'],
+  [29,'Lightning'],[30,'Cozy'],[31,'Focus'],[32,'Energy'],
+  [33,'Deep Sea'],[34,'Tropical'],[35,'Starry Night'],[36,'Meditation'],
+  [37,'Gaming'],[38,'Neon'],[39,'Pastel'],[40,'Club'],
+];
+
+function initScenes() {
+  const grid = document.getElementById('sceneGrid');
+  SCENES.forEach(([id, name]) => {
+    const el = document.createElement('div');
+    el.className = 'scene-chip';
+    el.textContent = name;
+    el.dataset.id = id;
+    el.onclick = () => sendScene(id, el);
+    grid.appendChild(el);
+  });
+  for (let i = 41; i <= 156; i++) {
+    const el = document.createElement('div');
+    el.className = 'scene-chip';
+    el.textContent = 'Scene ' + i;
+    el.dataset.id = i;
+    el.onclick = () => sendScene(i, el);
+    grid.appendChild(el);
+  }
+}
+
+async function sendScene(id, el) {
+  document.querySelectorAll('.scene-chip.active').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  activeScene = id;
+  try {
+    await api('POST', 'scene', { scene_id: id });
+    toast('Scene: ' + el.textContent);
+  } catch (e) { toast(e.message, true); }
+}
+
+// ---------------------------------------------------------------------------
+// Mic
+// ---------------------------------------------------------------------------
+async function sendMic() {
+  const on = document.getElementById('chkMic').checked;
+  try {
+    await api('POST', 'mic', { state: on ? 'on' : 'off' });
+    toast('Mic: ' + (on ? 'ON' : 'OFF'));
+  } catch (e) { toast(e.message, true); }
+}
+
+let _sensDebounce;
+async function sendSensitivity() {
+  clearTimeout(_sensDebounce);
+  _sensDebounce = setTimeout(async () => {
+    const level = +document.getElementById('slSens').value;
+    try {
+      await api('POST', 'sensitivity', { level });
+    } catch (e) { toast(e.message, true); }
+  }, 150);
+}
+
+// ---------------------------------------------------------------------------
+// Timer
+// ---------------------------------------------------------------------------
+async function setTimer(seconds) {
+  document.getElementById('inpTimer').value = seconds;
+  try {
+    await api('POST', 'timer', { seconds });
+    if (seconds === 0) toast('Timer cancelled');
+    else toast('Timer: ' + formatTime(seconds));
+  } catch (e) { toast(e.message, true); }
+}
+
+function formatTime(sec) {
+  if (sec >= 3600) return Math.round(sec/3600) + 'h';
+  if (sec >= 60) return Math.round(sec/60) + 'm';
+  return sec + 's';
+}
+
+// ---------------------------------------------------------------------------
+// Motion Sensor
+// ---------------------------------------------------------------------------
+async function sendSensor() {
+  const on = document.getElementById('chkSensor').checked;
+  const delay = +document.getElementById('inpSensorDelay').value || 30;
+  try {
+    await api('POST', 'sensor', { state: on ? 'on' : 'off', delay });
+    toast('Sensor: ' + (on ? 'ON' : 'OFF'));
+  } catch (e) { toast(e.message, true); }
+}
+
+// ---------------------------------------------------------------------------
+// Factory Reset
+// ---------------------------------------------------------------------------
+function confirmReset() {
+  document.getElementById('modalReset').classList.add('open');
+}
+function closeResetModal() {
+  document.getElementById('modalReset').classList.remove('open');
+}
+async function doReset() {
+  closeResetModal();
+  try {
+    await fetch('/api/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Confirm': 'yes-factory-reset' }
+    }).then(r => r.json());
+    toast('Factory reset sent');
+  } catch (e) { toast(e.message, true); }
+}
+
+// ---------------------------------------------------------------------------
+// Init
+// ---------------------------------------------------------------------------
+initSwatches();
+initScenes();
+</script>
+</body>
+</html>
