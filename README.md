@@ -1,7 +1,7 @@
 # LotusLamp X -- BLE Light Controller
 
 Control LotusLamp X-compatible BLE LED devices using the same GATT protocol as
-the official Android app. No phone required.
+the official app. No phone required.
 
 Two interfaces are included:
 
